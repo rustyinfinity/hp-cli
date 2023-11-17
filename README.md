@@ -1,6 +1,6 @@
-A easy to use bash script written for downloading hentai and adult videos !
+# A easy to use bash script written for downloading hentai and adult videos !
 
-<img width="1058" alt="Screenshot 2023-11-17 at 4 01 42 AM" src="https://github.com/rustyinfinity/hp-cli/assets/115462641/6299ff40-9c87-4e98-8f13-4642e334d82a">
+<img width="608" alt="Screenshot 2023-11-17 at 4 10 20 PM" src="https://github.com/rustyinfinity/hp-cli/assets/115462641/ed08714c-563c-4f25-8555-ef9a849fb409">
 
 
 
