@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+source "./main.config"
+
+if [ -z $DOWNLOAD_DIR ]
+then
+DOWNLOAD_DIR="./"
+fi
+
 # Version number
 VERSION="1.0.4"
 
@@ -82,17 +89,17 @@ freehentaistream(){
 		
 		if [ $series_choice == 1 ]
 		then
-			mkdir -p "./${series_name}"
+			mkdir -p "$DOWNLOAD_DIR/${series_name}"
 			video_Link="${is_Available}"
-			wget2 --header="$header_1" --header="$header_2" -P "./${series_name}" "${video_Link}"  
+			wget2 --header="$header_1" --header="$header_2" -P "$DOWNLOAD_DIR/${series_name}" "${video_Link}"  
 		elif [ $series_choice == 2 ]
 		then
-			mkdir -p "./${series_name}"
+			mkdir -p "$DOWNLOAD_DIR/${series_name}"
 			for (( i=1 ; i<="$total_episodes_series";i++  ))
 			do
 				html_video=$(curl -s $(echo "$total_episodes_series_link" | sed -n $i\p ))
 				freehentaistream_link_extract
-				wget2 --header="$header_1" --header="$header_2" -P "./${series_name}" "${video_Link}" 
+				wget2 --header="$header_1" --header="$header_2" -P "$DOWNLOAD_DIR/${series_name}" "${video_Link}" 
 			done
 		else
 			exit
@@ -175,7 +182,7 @@ then
 	chosen_quality=$(echo "$video_quality_link" | sed -n ${quality}\p )
 	download_link=$(curl -Ls -o /dev/null -w %{url_effective} "$chosen_quality")
 
-	wget2 --header="$header_1" --header="$header_2" --header="Accept: video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5" --header="Referer: https://www.whoreshub.com/" -O "./$video_name.mp4" "$download_link"
+	wget2 --header="$header_1" --header="$header_2" --header="Accept: video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5" --header="Referer: https://www.whoreshub.com/" -O "$DOWNLOAD_DIR/$video_name.mp4" "$download_link"
 
 elif [ $choice == 2 ]
 then
@@ -217,7 +224,7 @@ then
 	read quality
 	chosen_quality=$(printf '%s' "$video_quality_link" | sed -n $quality\p )
 	download_link=$(curl -Ls -o /dev/null -w %{url_effective} "$chosen_quality")
-	wget2 --header="$header_2" --header="Accept: video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5" --header="Referer: https://www.whoreshub.com/" -O "./$video_name.mp4" "$download_link"
+	wget2 --header="$header_2" --header="Accept: video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5" --header="Referer: https://www.whoreshub.com/" -O "$DOWNLOAD_DIR/$video_name.mp4" "$download_link"
 else
 exit
 fi
@@ -314,7 +321,7 @@ download_link=$(echo "$video_quality_link" | sed -n ${quality}\p)
 echo $download_link
 redirect_link=$(curl -Ls -o /dev/null -w %{url_effective} "$download_link" )
 
-wget2 -O "./$video_name.mp4" --header="${header_1}" --header="${header_2}" "$download_link/"
+wget2 -O "$DOWNLOAD_DIR/$video_name.mp4" --header="${header_1}" --header="${header_2}" "$download_link/"
 
 }
 
@@ -378,7 +385,7 @@ fuxnxx(){
 	echo -n "-> " 
 	read quality
 
-	wget2 -O "./${video_name}.mp4" --header="$header_2" "$(echo "$video_links" | sed -n $quality\p)"
+	wget2 -O "$DOWNLOAD_DIR/${video_name}.mp4" --header="$header_2" "$(echo "$video_links" | sed -n $quality\p)"
 
  }
 
