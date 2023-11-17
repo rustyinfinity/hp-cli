@@ -134,7 +134,7 @@ read s_choice
 
 if [[ $choice == 1 ]]
 then
-	search=$(echo "$s_choice" | sed 's/ /-/g' )
+	search=$(echo "$s_choice" | tr ' ' '-' )
 	search_page=$(curl -s "https://www.whoreshub.com/search/${search}/")
 	echo $search_page
 
@@ -186,7 +186,7 @@ then
 
 elif [ $choice == 2 ]
 then
-	search=$(echo "$s_choice" | sed 's/ /-/g' )
+	search=$(echo "$s_choice" | tr ' ' '-' )
 	search_page=$(curl -s "https://www.whoreshub.com/models/$search/")
 	clear
 	whoreshub_search
@@ -245,7 +245,7 @@ read choice
 echo -n "-> "
 read search
 
-search=$(echo "$search" | sed 's/ /-/g' )
+search=$(echo "$search" | tr ' ' '-' )
 
 if [ $choice == 1 ]
 then
@@ -347,10 +347,10 @@ fuxnxx_extracted_result(){
 
 fuxnxx(){
 
-	input=$(echo "$input" | sed 's/ /-/')
+	input=$(echo "$input" | tr ' ' '-' )
 
 	url="fuxnxx.com"
-	search_url="https://${url}/search/$input.html"
+	search_url="https://${url}/search/${input}.html"
 
 	fuxnxx_search_result
 	
