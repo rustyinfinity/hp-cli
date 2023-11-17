@@ -1,0 +1,421 @@
+#!/usr/bin/env bash
+
+# Version number
+VERSION="1.0.4"
+
+header_1="accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/jxl,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+header_2="user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+
+freehentaistream_link_extract(){
+	video_Link=$(echo "$html_video" | grep -Eo 'https://[a-zA-Z0-9?%-_/]*.mp4')
+
+}
+
+freehentaistream_series_extract(){
+	series_link=$(echo "$html_video" | grep -Eo "https://${site_url}/hentaiseries/[a-zA-Z0-9?%-_]*" | awk '!seen[$0]++')
+	series_name=$(echo "$series_link" | sed "s/https:\/\/${site_url}\/hentaiseries\///g" | sed 's/-/ /g' | tr '[:lower:]' '[:upper:]'  )
+	html_series=$(curl -s "$series_link")
+	series_description=$(echo "$html_series" | grep -Eo '<p class="text">.*</p> </span>' | sed 's/<p class="text">//g' | sed 's/<\/p> <\/span>//g' )
+	series_genre=$(echo "$html_series" | grep -Eo "https://${site_url}/genre/[a-zA-Z0-9?%-_]*" | sed "s/https:\/\/${site_url}\/genre\///g" | tr '\n' ',' | sed 's/.$//' )
+	total_episodes_series_link=$(echo "$html_series" | grep -Eo "https://${site_url}/[a-zA-Z0-9?%-_]*?download" | sed 's/?download//g' )
+	total_episodes_series=$(echo "$total_episodes_series_link" | wc -l | grep -Eo [0-9]* )
+}
+
+freehentaistream_search_result(){
+	html_search_url=$(curl -s "$search_url")
+	total_pages=$(echo "$html_search_url" | grep -Eo 'class="page_info">Page 1 of [0-9]*' | sed 's/class="page_info">Page 1 of //g' | grep -Eo '[0-9]*')
+	video_urls=$(echo "$html_search_url" | grep -Eo "https://${site_url}/[a-zA-Z0-9?%-_]*?download" | sed 's/?download//g')
+	total_videos=$(echo "$video_urls" | wc -l )
+	video_titles=$(echo "$html_search_url" | grep -Eo "https://${site_url}/[a-zA-Z0-9?%-_]*?download" | sed 's/?download//g' | sed "s/https:\/\/${site_url}\///g" | sed 's/-/ /g'  | tr '[:lower:]' '[:upper:]' | cat -n )
+}
+
+freehentaistream(){
+	site_url="watch.freehentaistream.com"
+	search_url="https://$site_url/?s=$input"
+	freehentaistream_search_result
+
+	echo "$video_titles"
+	echo "Total Pages :- $total_pages"
+	echo "Enter Video Number ! or P for page Number"
+	echo -n "-> "
+	read video_input
+
+	if [ $video_input == P ]
+	then
+		while (( $video_input == P )) 
+		do
+		echo "Enter Page Number"
+		read page_no
+		site_url="watch.freehentaistream.com"
+		search_url="https://$site_url/page/$page_no?s=$input"
+		freehentaistream_search_result
+		echo "$video_titles"
+		echo "Total Pages :- $total_pages"
+		echo "Enter Video Number ! or P for page Number"
+		echo -n "-> "
+		read video_input
+		done
+	fi
+
+	html_video=$(curl -s $(echo "$video_urls" | sed -n ${video_input}\p ))
+	is_Available=$(echo "$html_video" | grep -Eo 'https://[a-zA-Z0-9?%-_/]*.mp4')
+
+	if [ -z ${is_Available} ]
+	then
+	 echo "Not Available ! "
+	else
+		clear
+		freehentaistream_series_extract
+
+		echo "SERIES NAME: $series_name"
+		echo " "
+		echo "SERIES DESCRIPTION: $series_description"
+		echo " "
+		echo "SERIES GENRE: $series_genre"
+		echo " "
+		echo "TOTAL EPISODES IN SERIES: $total_episodes_series"
+
+		echo "1) Download Single Episode"
+		echo "2) Download Whole Series"
+		echo -n "-> "
+		read series_choice
+		
+		if [ $series_choice == 1 ]
+		then
+			mkdir -p "./${series_name}"
+			video_Link="${is_Available}"
+			wget2 --header="$header_1" --header="$header_2" -P "./${series_name}" "${video_Link}"  
+		elif [ $series_choice == 2 ]
+		then
+			mkdir -p "./${series_name}"
+			for (( i=1 ; i<="$total_episodes_series";i++  ))
+			do
+				html_video=$(curl -s $(echo "$total_episodes_series_link" | sed -n $i\p ))
+				freehentaistream_link_extract
+				wget2 --header="$header_1" --header="$header_2" -P "./${series_name}" "${video_Link}" 
+			done
+		else
+			exit
+		fi
+	fi
+
+ }
+
+whoreshub_search(){
+videos_link=$(echo "$search_page" | grep -Eo '<a class="item" href="https://www.whoreshub.com/videos/[a-zA-Z0-9?%-_]*" title="[ a-zA-Z0-9?%-_]*' | grep -Eo 'href="https://www.whoreshub.com/videos[a-zA-Z0-9?%_/-]*' | sed 's/href="//g'  )
+video_title=$(echo "$search_page" | grep -Eo 'https://www.whoreshub.com/videos/[0-9]*/[a-zA-Z0-9?%-_]*/' | sed 's/https:\/\/www.whoreshub.com\/videos\///g' | sed 's/.$//g' | sed 's/.*\///g' | tr '[:lower:]' '[:upper:]' | sed 's/-/ /g' )
+video_pages=$(echo "$search_page" | grep -Eo 'from_videos[a-zA-Z0-9?%-_]*from_albums:[0-9]*' | tail -n2 | head -n 1 | grep -Eo '[0-9]*')
+}
+
+whoreshub_videos_extract(){
+video_name=$(printf '%s' "$video_title" | sed -n $video_no\p)
+video_link=$(printf '%s' "$videos_link" | sed -n $video_no\p )
+video_page=$(curl -s "$video_link")
+video_quality_link=$(echo "$video_page" | grep -Eo 'https://www.whoreshub.com/get_file/[a-zA-Z0-9?%-_]*p.mp4' )
+video_quality=$(echo "$video_page" | grep -Eo 'https://www.whoreshub.com/get_file/[a-zA-Z0-9?%-_]*p.mp4' | grep -Eo '_[0-9]*p' |  sed 's/_/ /g'  | cat -n )
+}
+
+whoreshub(){
+
+echo "(1) Normal Search"
+echo "(2) Search exact Pornstar"
+echo -n "-> "
+read choice
+
+echo -n "-> "
+read s_choice
+
+if [[ $choice == 1 ]]
+then
+	search=$(echo "$s_choice" | sed 's/ /-/g' )
+	search_page=$(curl -s "https://www.whoreshub.com/search/${search}/")
+	echo $search_page
+
+	clear
+	whoreshub_search
+
+
+	echo "Query Results >> "
+	echo   "$video_title" | cat -n
+	echo   "(*) Total pages >> $video_pages"
+	echo   "(P) go to page"
+
+	echo -n "-> "
+	read video_no
+
+	if [ $video_no == P ]
+	then
+		while (( $video_no == P ))
+		do
+			echo -n "-> "
+			read page_no
+			search_page=$(curl -s "https://www.whoreshub.com/search/%22$search%22/?mode=&mode=async&sort_by=&sort_by=&from_videos=%$page_no&from_videos=$page_no&from_albums=$page_no&from_albums=$page_no&function=get_block&block_id=list_videos_videos_list_search_result&q=%22$search%22" )
+
+			clear
+			whoreshub_search
+
+			echo "Query Results >> "
+			echo   "$video_title" | cat -n
+			echo   "(*) Total pages >> $video_pages"
+			echo   "(P) go to page"
+
+			echo -n "-> "
+			read video_no
+		done
+
+	fi
+
+	whoreshub_videos_extract
+
+	echo "(*) Quality"
+	echo "$video_quality"
+	echo -n "-> "
+	read quality
+
+	chosen_quality=$(echo "$video_quality_link" | sed -n ${quality}\p )
+	download_link=$(curl -Ls -o /dev/null -w %{url_effective} "$chosen_quality")
+
+	wget2 --header="$header_1" --header="$header_2" --header="Accept: video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5" --header="Referer: https://www.whoreshub.com/" -O "./$video_name.mp4" "$download_link"
+
+elif [ $choice == 2 ]
+then
+	search=$(echo "$s_choice" | sed 's/ /-/g' )
+	search_page=$(curl -s "https://www.whoreshub.com/models/$search/")
+	clear
+	whoreshub_search
+	echo "Query Results >> "
+	echo   "$video_title" | cat -n
+	echo   "(*) Total pages >> $video_pages"
+	echo   "(P) go to page"
+	echo -n "-> "
+	read video_no
+
+	if [ $video_no == P ]
+		then
+		while (( $video_no == P ))
+		do
+			echo -n "-> "
+			read page_no
+			search_page=$(curl -s "https://www.whoreshub.com/models/$search/?mode=async&function=get_block&block_id=list_videos_common_videos_list&sort_by=rating&from=$page_no&_=1700155914876" )
+			clear
+			whoreshub_search
+
+			echo "Query Results >> "
+			echo   "$video_title" | cat -n
+			echo   "(*) Total pages >> $video_pages"
+			echo   "(P) go to page"
+
+			echo -n "-> "
+			read video_no
+		done
+	fi
+	whoreshub_videos_extract
+
+	echo "(*) Quality"
+	echo "$video_quality"
+	echo -n "-> "
+	read quality
+	chosen_quality=$(printf '%s' "$video_quality_link" | sed -n $quality\p )
+	download_link=$(curl -Ls -o /dev/null -w %{url_effective} "$chosen_quality")
+	wget2 --header="$header_2" --header="Accept: video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5" --header="Referer: https://www.whoreshub.com/" -O "./$video_name.mp4" "$download_link"
+else
+exit
+fi
+
+}
+
+goodporn_search_results(){
+ videos_link=$(printf '%s' "$search_page" | grep -Eo 'https://goodporn.to/videos/[0-9]*/[a-zA-Z0-9?%-_]*/' )
+ video_title=$(printf '%s' "$search_page" | grep -Eo 'https://goodporn.to/videos/[0-9]*/[a-zA-Z0-9?%-_]*/' | sed 's/https:\/\/goodporn.to\/videos\///g' | grep -Eo '/[a-zA-Z0-9?%-_]*/' | sed 's/\///g' | sed 's/-/ /' | sed 's/-/ /g' | tr '[:lower:]' '[:upper:]'  )
+ video_pages=$(printf '%s' "$search_page" | grep -Eo 'from_videos[a-zA-Z0-9?%-_]*from_albums:[0-9]*' | tail -n2 | head -n1  | grep -Eo '[0-9]*')
+}
+
+goodporn(){
+echo "(1) Normal Search"
+echo "(2) Search exact Pornstar"
+echo -n "-> "
+read choice
+echo -n "-> "
+read search
+
+search=$(echo "$search" | sed 's/ /-/g' )
+
+if [ $choice == 1 ]
+then
+	search_page=$(curl -s https://goodporn.to/search/$search/)
+	goodporn_search_results
+	echo   "$video_title" | cat -n
+	echo   "(*) Total pages >> $video_pages"
+	echo   "(P) go to page"
+
+	echo -n "-> "
+	read video_no
+
+	if [ $video_no == P ]
+	then
+		while (( $video_no == P ))
+		do
+			echo -n "-> "
+			read page_no
+			search_query=$(echo "$search" | sed 's/-/+/g')
+			search_page=$(curl -s "https://goodporn.to/search/$search/?mode=async&function=get_block&block_id=list_videos_videos_list_search_result&q=$search_query&category_ids=&sort_by=post_date&from_videos=$page_no&from_albums=$page_no&_=1700157020130")
+			goodporn_search_results
+			echo   "$video_title" | cat -n
+			echo   "(*) Total pages >> $video_pages"
+			echo   "(P) go to page"
+
+			echo -n "> "
+			read video_no
+		done
+	fi
+elif [ $choice == 2 ]
+then
+	search_page=$(curl -s https://goodporn.to/models/$search/)
+	goodporn_search_results
+	video_pages=$(echo "$search_page" | grep -Eo 'sort_by:post_date;from:[0-9]*' | tail -n2 | head -n1  | grep -Eo '[0-9]*' )
+	echo   "$video_title" | cat -n
+	echo   "(*) Total pages >> $video_pages"
+	echo   "(P) go to page"
+
+	echo -n "-> "
+	read video_no
+
+	if [ $video_no == P ]
+	then
+		while (( $video_no == P ))
+		do
+			echo -n "-> "
+			read page_no
+			search_page=$(curl -s "https://goodporn.to/models/$search/?mode=async&function=get_block&block_id=list_videos_common_videos_list&sort_by=post_date&from=$page_no&_=1700158489207")
+			goodporn_search_results
+			video_pages=$(echo "$search_page" | grep -Eo 'sort_by:post_date;from:[0-9]*' | tail -n2 | head -n1  | grep -Eo '[0-9]*' )
+			echo   "$video_title" | cat -n
+			echo   "(*) Total pages >> $video_pages"
+			echo   "(P) go to page"
+
+			echo -n "> "
+			read video_no
+		done
+	fi
+else
+exit
+fi
+
+video_name=$(echo "$video_title" | sed -n $video_no\p)
+video_link=$(echo "$videos_link" | sed -n $video_no\p )
+video_page=$(curl -s "$video_link")
+video_quality_link=$(echo "$video_page" | grep -Eo '"https://goodporn.to/get_file/[a-zA-Z0-9?%-_/]*p.mp4&[a-zA-Z0-9?%-_]*"' | sed 's/"//g'  | awk '!a[$0]++' | sed 's/&download.*//g' )
+video_quality=$(echo "$video_page" | grep -Eo '"https://goodporn.to/get_file/[a-zA-Z0-9?%-_/]*p.mp4&[a-zA-Z0-9?%-_]*"' | sed 's/"//g' | awk '!a[$0]++' | grep -Eo '[0-9]*p.mp4' | awk '!a[$0]++' | sed 's/.mp4//g' | cat -n )
+echo "(*) Quality"
+echo "$video_quality"
+echo -n "-> "
+read quality
+download_link=$(echo "$video_quality_link" | sed -n ${quality}\p)
+echo $download_link
+redirect_link=$(curl -Ls -o /dev/null -w %{url_effective} "$download_link" )
+
+wget2 -O "./$video_name.mp4" --header="${header_1}" --header="${header_2}" "$download_link/"
+
+}
+
+fuxnxx_search_result(){
+	html_search_url=$(curl -s "${search_url}")
+	total_pages=$(echo "$html_search_url" | grep -Eo '/search/[a-zA-Z0-9?%-_]*/[0-9]*.html'| tail -n 1 | grep -Eo '[0-9]*.html' | grep -Eo '[0-9]*' )
+	video_urls=$(echo "$html_search_url" | grep -Eo '/xxx/[a-zA-Z0-9?%-_]*.html' | sed "s/\/xxx\//https:\/\/${url}\/xxx\//g" )
+	videos_title=$(echo "$html_search_url" | grep -Eo '/xxx/[a-zA-Z0-9?%-_]*.html' | sed 's/\/xxx\///g' | sed 's/.html//g' | sed 's/-/ /g' | tr '[:lower:]' '[:upper:]' | cat -n )
+ }
+
+fuxnxx_extracted_result(){
+	video_url_html=$(curl -s $(echo "$video_urls" | sed -n ${video_input}\p ) )
+	video_name=$(echo "$html_search_url" | grep -Eo '/xxx/[a-zA-Z0-9?%-_]*.html' | sed 's/\/xxx\///g' | sed 's/.html//g' | sed 's/-/ /g' | tr '[:lower:]' '[:upper:]'  | sed -n ${video_input}\p )
+	video_embed_url=$(echo "$video_url_html" | grep -Eo '/embed[a-zA-Z0-9?%-_]*.html')
+	video_embed_id=$(echo "$video_embed_url" | sed 's/\/embeda\///g' | sed 's/.html//g')
+	ajax_url="https://mydaddy.cc/video/$video_embed_id/"
+	video_links=$(curl -s "$ajax_url" | grep -Eo '//[a-zA-Z0-9?%-_]*.mp4' | awk '!seen[$0]++' | sed 's/\/\//https:\/\//g')
+	avialble_quality=$(echo "$video_links" |  grep -Eo '[0-9]*.mp4' | sed 's/.mp4//g' | cat -n )
+	clear
+	echo "Name: $video_name"
+	echo "$avialble_quality"
+}
+
+fuxnxx(){
+
+	input=$(echo "$input" | sed 's/ /-/')
+
+	url="fuxnxx.com"
+	search_url="https://${url}/search/$input.html"
+
+	fuxnxx_search_result
+	
+	echo "$videos_title"
+	echo "Total Pages :- $total_pages"
+	echo "Enter Video Number ! or P for page Number"
+	echo -n "-> "
+	read video_input
+
+	if [ $video_input == P ]
+	then
+		while (( $video_input == P ))
+		do
+			echo "Enter Page Number"
+			read page_no
+
+			url="fuxnxx.com"
+			search_url="https://${url}/search/${input}/${page_no}.html"
+			
+			fuxnxx_search_result
+			
+			echo "$videos_title"
+			echo "Total Pages :- $total_pages"
+			echo "Enter Video Number ! or P for page Number"
+			echo -n "-> "
+			read video_input
+		done
+	fi
+	fuxnxx_extracted_result
+	
+	echo "Enter Quality !"
+	echo -n "-> " 
+	read quality
+
+	wget2 -O "./${video_name}.mp4" --header="$header_2" "$(echo "$video_links" | sed -n $quality\p)"
+
+ }
+
+echo  "(*) Easy to use hentai & porn downloader !"
+echo  "(1) Hentai"
+echo  "(2) Porn (*) fuxnxx [BETA] (Mirror of HQPorner !)"
+echo  "(3) Porn (*) Whoreshub [BETA](Best Quality)"
+echo  "(4) Porn (*) Goodporn [BETA](Latest ! but Low Quality)"
+echo -n "-> "
+read genere
+clear
+
+if [ $genere == 1 ]
+then
+echo "Search"
+echo -n "-> "
+read input
+freehentaistream
+
+elif [ $genere == 2 ]
+then
+echo "Search"
+echo -n "-> "
+read input
+fuxnxx
+elif [ $genere == 3 ]
+then
+whoreshub
+elif [ $genere == 4 ]
+then
+goodporn
+else
+exit
+fi
+
+
+
+
+
+
