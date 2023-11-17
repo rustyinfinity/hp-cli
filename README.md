@@ -1,46 +1,46 @@
+A easy to use bash script written for downloading hentai and adult videos !
+
+<img width="1058" alt="Screenshot 2023-11-17 at 4 01 42 AM" src="https://github.com/rustyinfinity/hp-cli/assets/115462641/6299ff40-9c87-4e98-8f13-4642e334d82a">
 
 
 
 
 
+It scrapes the supported sites and downloads videos from them !
 
-https://user-images.githubusercontent.com/115462641/230613110-feda28f3-e57f-4317-b614-ef28ce86e29b.mp4
-
-
-<img width="1058" alt="Screenshot 2023-11-17 at 4 01 42 AM" src="https://github.com/rustyinfinity/hentai-porn-cli/assets/115462641/e6e6e36f-f182-4ac5-ae78-ea98630eb318">
-
-
-
-
-
-A easy to use bash script written for downloading hentai and porn videos in 1080p Full HD .
-
-It scrapes the site (#https://hqporner.com) I have removed hqporner for now as it's not working with me and i have to use vpn to fix and maintain it so i have added clone website of it fuxnxx.com , https:/watch.freehentaistream.com , https://whoreshub.com and https://goodporn.to
-
+# Supported Websites !
+watch.freehentaistream.com , fuxnxx.com , whoreshub.com and goodporn.to
 
 ## Installation
+First Download wget2 from your distro repo !
 
-Pls install aria2c
-Default download folder is ./ i will add feature to change later !
-
-for installing aria2c in major distros 
+For Arch
+Download from AUR "https://aur.archlinux.org/packages/wget2"
 ```bash
-sudo apt install aria2
-sudo dnf install aria2
-sudo pacman -S aria2
+yay -S wget2
 ```
-For running script just make it executable and voila !
+For Fedora
+```bash
+sudo dnf install wget2
+```
+For Ubuntu
+```
+sudo apt install wget2
+```
+
+or Build it Yourself from https://gitlab.com/gnuwget/wget2
+
+
+# Secondly clone repo and make it an executable !
 
 ```bash
-  chmod +x hp-cli
-  ./hp-cli
+git clone https://github.com/rustyinfinity/hp-cli.git
 ```
-    
-## Feedback
+```bash
+chmod +x hp-cli
+./hp-cli
+```
 
-If you have any feedback,  pls add it into issues.
-
-Pls star this it helps to know if my work is not going to waste
-
-I know its not polished and is kinda just works i will fix it in the future when i will have free time.
+# Default Config
+Default download directory is "./"
 
